@@ -1,1 +1,465 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diesel Engine Compression Testing Gauge Simulator</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --primary: #0f4c81;
+      --accent: #e67e22;
+      --ok: #1e8449;
+      --warn: #b7950b;
+      --bad: #c0392b;
+      --text: #1c2833;
+      --muted: #5d6d7e;
+      --border: #d5dbdb;
+    }
+    * { box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    header {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 6px solid var(--primary);
+      border-radius: 10px;
+      padding: 16px 22px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 { margin: 0; font-size: 1.35rem; color: var(--primary); }
+    header p { margin: 4px 0 0; font-size: 0.9rem; color: var(--muted); }
+    .badge {
+      background: #eaf2f8;
+      color: var(--primary);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      color: var(--primary);
+      border-bottom: 1px solid #eceff1;
+      padding-bottom: 8px;
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+    select, button {
+      width: 100%;
+      padding: 9px 11px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    select { background: #fff; color: var(--text); }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      flex: 1 1 140px;
+      transition: opacity 0.15s ease;
+    }
+    button:hover { opacity: 0.92; }
+    .btn-crank { background: var(--primary); color: #fff; border: none; }
+    .btn-stroke { background: var(--accent); color: #fff; border: none; }
+    .btn-release { background: #566573; color: #fff; border: none; }
+    .btn-reset { background: #ecf0f1; color: var(--text); }
+
+    .diag-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .readings {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+      text-align: center;
+    }
+    .read-card {
+      background: #f4f7fb;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .read-card .val { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+    .read-card .lbl { font-size: 0.75rem; color: var(--muted); }
+
+    footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>ડીઝલ એન્જિન કોમ્પ્રેશન ટેસ્ટિંગ ગેજ સિમ્યુલેટર</h1>
+        <p>પિસ્ટન સ્ટ્રોક, ઇન્સર્શન પોર્ટ (Injector / Glow Plug) અને ચેક-વાલ્વ પ્રેશર હોલ્ડિંગનું પ્રેક્ટિકલ સિમ્યુલેશન</p>
+      </div>
+      <span class="badge">Mechanic Diesel • ITI Lab</span>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Engine Cylinder + Gauge SVG -->
+      <div class="panel">
+        <h2>૧. સિલિન્ડર ક્રોસ-સેક્શન અને કોમ્પ્રેશન ગેજ</h2>
+
+        <div class="controls-row">
+          <div>
+            <label for="portSelect">ગેજ ઇન્સર્શન જગ્યા (Port)</label>
+            <select id="portSelect">
+              <option value="injector">ફ્યુઅલ ઇન્જેક્ટર પોર્ટ (Injector Port - DI/IDI)</option>
+              <option value="glow">ગ્લો પ્લગ પોર્ટ (Glow Plug Port - IDI/Modern)</option>
+            </select>
+          </div>
+          <div>
+            <label for="condSelect">સિલિન્ડર / એન્જિન સ્થિતિ (Condition)</label>
+            <select id="condSelect">
+              <option value="healthy">સ્વસ્થ એન્જિન (Healthy - ~28 bar)</option>
+              <option value="rings">નબળી પિસ્ટન રિંગ્સ (Worn Rings - ~14 bar)</option>
+              <option value="valve">વાલ્વ લીકેજ (Leaking Intake/Exhaust Valve - ~11 bar)</option>
+              <option value="gasket">હેડ ગાસ્કેટ બ્લોન (Blown Head Gasket - ~8 bar)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-stroke" id="btnStroke">૧ કમ્પ્રેશન સ્ટ્રોક (1 Stroke)</button>
+          <button class="btn-crank" id="btnAuto">ઓટો ક્રેંકિંગ (Auto Crank)</button>
+          <button class="btn-release" id="btnRelease">રિલીઝ વાલ્વ દબાવો (Release)</button>
+          <button class="btn-reset" id="btnReset">રીસેટ (Reset)</button>
+        </div>
+
+        <svg id="simSvg" viewBox="0 0 640 420" width="100%" style="background:#fafcff;border:1px solid #e2e8f0;border-radius:8px;">
+          <!-- Cylinder Head -->
+          <rect x="110" y="90" width="230" height="55" rx="6" fill="#cfd8dc" stroke="#455a64" stroke-width="2" />
+          <text x="225" y="112" text-anchor="middle" font-size="12" font-weight="bold" fill="#263238">CYLINDER HEAD</text>
+
+          <!-- Intake & Exhaust Valves -->
+          <line x1="150" y1="90" x2="150" y2="155" stroke="#37474f" stroke-width="4" />
+          <line x1="136" y1="155" x2="164" y2="155" stroke="#37474f" stroke-width="5" />
+          <text x="150" y="82" text-anchor="middle" font-size="10" fill="#455a64">Intake</text>
+
+          <line x1="295" y1="90" x2="295" y2="155" stroke="#37474f" stroke-width="4" />
+          <line x1="281" y1="155" x2="309" y2="155" stroke="#37474f" stroke-width="5" />
+          <text x="295" y="82" text-anchor="middle" font-size="10" fill="#455a64">Exhaust</text>
+
+          <!-- Insertion Port Adapter (Injector or Glow Plug position) -->
+          <rect id="portBlock" x="210" y="72" width="30" height="22" rx="3" fill="#d4ac0d" stroke="#7d6608" stroke-width="2" />
+          <text id="portLabel" x="225" y="65" text-anchor="middle" font-size="11" font-weight="bold" fill="#7d6608">INJECTOR PORT</text>
+
+          <!-- Cylinder Liner / Block -->
+          <rect x="125" y="145" width="200" height="225" fill="#eceff1" stroke="#455a64" stroke-width="2.5" />
+          <!-- Compressed air shading -->
+          <rect id="airShade" x="127" y="147" width="196" height="90" fill="#3498db" opacity="0.08" />
+
+          <!-- Piston -->
+          <g id="pistonGroup" transform="translate(0, 0)">
+            <rect x="128" y="235" width="194" height="58" rx="4" fill="#90a4ae" stroke="#263238" stroke-width="2" />
+            <!-- Piston Rings -->
+            <line x1="128" y1="245" x2="322" y2="245" stroke="#212121" stroke-width="2.5" />
+            <line x1="128" y1="254" x2="322" y2="254" stroke="#212121" stroke-width="2.5" />
+            <line x1="128" y1="263" x2="322" y2="263" stroke="#212121" stroke-width="2.5" />
+            <text x="225" y="282" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">PISTON</text>
+            <!-- Connecting Rod -->
+            <rect x="216" y="293" width="18" height="95" fill="#78909c" stroke="#37474f" stroke-width="2" />
+          </g>
+
+          <!-- Hose from Port to Compression Gauge -->
+          <path d="M 225 72 C 225 22, 485 22, 485 110" fill="none" stroke="#2c3e50" stroke-width="6" stroke-linecap="round" />
+          <circle cx="225" cy="72" r="5" fill="#e67e22" />
+          <text x="355" y="26" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c3e50">One-Way Check Valve + Hose</text>
+
+          <!-- Analog Compression Gauge Dial -->
+          <g transform="translate(485, 195)">
+            <circle cx="0" cy="0" r="86" fill="#ffffff" stroke="#1c2833" stroke-width="5" />
+            <circle cx="0" cy="0" r="78" fill="none" stroke="#bdc3c7" stroke-width="1.5" />
+
+            <!-- Scale ticks (0 to 40 bar) -->
+            <g id="gaugeTicks"></g>
+
+            <text x="0" y="34" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c3e50">BAR (x14.5 PSI)</text>
+            <text id="gaugeDigital" x="0" y="52" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f4c81">0.0 bar</text>
+
+            <!-- Needle -->
+            <g id="gaugeNeedle" transform="rotate(-135)">
+              <line x1="0" y1="12" x2="0" y2="-66" stroke="#c0392b" stroke-width="3.5" stroke-linecap="round" />
+              <circle cx="0" cy="0" r="7" fill="#c0392b" />
+            </g>
+          </g>
+        </svg>
+
+        <div class="readings">
+          <div class="read-card">
+            <div class="val" id="valBar">0.0 bar</div>
+            <div class="lbl">ટ્રેપ્ડ પ્રેશર (Bar)</div>
+          </div>
+          <div class="read-card">
+            <div class="val" id="valPsi">0 PSI</div>
+            <div class="lbl">સમકક્ષ પ્રેશર (PSI)</div>
+          </div>
+          <div class="read-card">
+            <div class="val" id="valStrokes">0</div>
+            <div class="lbl">કમ્પ્રેશન સ્ટ્રોક્સ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Trainer Guide & Diagnostics -->
+      <div class="panel">
+        <h2>૨. તાલીમાર્થી માર્ગદર્શન અને નિદાન (Diagnosis)</h2>
+        <div class="diag-box" id="diagBox">
+          <span class="status-pill" id="statusPill" style="background:#566573;">તૈયાર (Ready)</span>
+          <div id="diagText">
+            <strong>"૧ કમ્પ્રેશન સ્ટ્રોક"</strong> અથવા <strong>"ઓટો ક્રેંકિંગ"</strong> બટન દબાવીને જુઓ કે દરેક સ્ટ્રોકમાં સિલિન્ડરની હવા દબાઈને ચેક-વાલ્વ દ્વારા ગેજમાં કેવી રીતે એકઠી થાય છે.
+          </div>
+        </div>
+
+        <h2 style="margin-top:16px;">૩. પ્રેક્ટિકલ નિયમો (ITI Workshop Tips)</h2>
+        <ul style="padding-left:18px;font-size:0.88rem;line-height:1.6;color:#34495e;margin:0;">
+          <li><strong>ઇન્સર્શન સ્થાન:</strong> ડીઝલ એન્જિનમાં ઇન્જેક્ટર કાઢીને (અથવા ગ્લો પ્લગ પોર્ટમાં) યોગ્ય થ્રેડ/ક્લેમ્પ એડેપ્ટર ફિટ કરવું.</li>
+          <li><strong>ચેક વાલ્વ (Non-Return Valve):</strong> ગેજના નીચેના ભાગમાં વન-વે વાલ્વ હોય છે, જેથી પિસ્ટન નીચે જાય ત્યારે પણ ગેજમાં પ્રેશર જળવાઈ રહે.</li>
+          <li><strong>બધા સિલિન્ડર સરખા:</strong> મલ્ટી-સિલિન્ડર એન્જિનમાં બધા સિલિન્ડરનું રીડિંગ નજીકનું (સામાન્ય રીતે 10–15% અંદર) હોવું જોઈએ.</li>
+          <li><strong>સલામતી:</strong> ટેસ્ટ પહેલાં ફ્યુઅલ સપ્લાય કટ-ઓફ રાખવું અને બેટરી પૂર્ણ ચાર્જ હોવી જરૂરી છે.</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      Created by Yuvrajsinh Kosamia, Mechanic Diesel, ITI Ankleshwar
+    </footer>
+  </div>
+
+  <script>
+    const svgNS = "http://www.w3.org/2000/svg";
+    const ticksGroup = document.getElementById("gaugeTicks");
+
+    // Draw 0 to 40 bar ticks (-135 deg to +135 deg)
+    for (let b = 0; b <= 40; b += 2) {
+      const ratio = b / 40;
+      const angleDeg = -135 + ratio * 270;
+      const rad = (angleDeg - 90) * (Math.PI / 180);
+      const isMajor = b % 10 === 0;
+      const r1 = isMajor ? 62 : 68;
+      const r2 = 76;
+
+      const line = document.createElementNS(svgNS, "line");
+      line.setAttribute("x1", Math.cos(rad) * r1);
+      line.setAttribute("y1", Math.sin(rad) * r1);
+      line.setAttribute("x2", Math.cos(rad) * r2);
+      line.setAttribute("y2", Math.sin(rad) * r2);
+      line.setAttribute("stroke", b >= 24 && b <= 34 ? "#1e8449" : "#2c3e50");
+      line.setAttribute("stroke-width", isMajor ? "2.5" : "1.2");
+      ticksGroup.appendChild(line);
+
+      if (isMajor) {
+        const tx = Math.cos(rad) * 48;
+        const ty = Math.sin(rad) * 48 + 4;
+        const txt = document.createElementNS(svgNS, "text");
+        txt.setAttribute("x", tx);
+        txt.setAttribute("y", ty);
+        txt.setAttribute("text-anchor", "middle");
+        txt.setAttribute("font-size", "11");
+        txt.setAttribute("font-weight", "bold");
+        txt.setAttribute("fill", "#1c2833");
+        txt.textContent = b;
+        ticksGroup.appendChild(txt);
+      }
+    }
+
+    const condTargets = {
+      healthy: { maxBar: 28.0, label: "સ્વસ્થ સિલિન્ડર (Normal)", color: "#1e8449", note: "કમ્પ્રેશન પ્રેશર સામાન્ય રેન્જમાં છે. પિસ્ટન રિંગ્સ, વાલ્વ અને હેડ ગાસ્કેટ યોગ્ય રીતે સીલ કરે છે." },
+      rings:   { maxBar: 14.0, label: "પિસ્ટન રિંગ ઘસારો (Worn Rings)", color: "#b7950b", note: "પ્રેશર ઓછું છે. સિલિન્ડરમાં થોડું એન્જિન ઓઇલ નાખી ફરી ટેસ્ટ કરતાં જો પ્રેશર વધે તો પિસ્ટન રિંગ્સ/લાઇનર ઘસાયેલાં છે." },
+      valve:   { maxBar: 11.0, label: "વાલ્વ લીકેજ (Valve Leak)", color: "#c0392b", note: "ઇન્ટેક અથવા એક્ઝોસ્ટ વાલ્વ બેસી ગયેલાં/બળેલાં હોવાથી કમ્પ્રેશન દરમિયાન હવા લીક થાય છે." },
+      gasket:  { maxBar:  8.0, label: "હેડ ગાસ્કેટ સમસ્યા (Head Gasket)", color: "#c0392b", note: "ખૂબ ઓછું પ્રેશર. બાજુના સિલિન્ડર અથવા કૂલિંગ સિસ્ટમ તરફ પ્રેશર લીક થવાની શક્યતા છે." }
+    };
+
+    let strokes = 0;
+    let trappedBar = 0;
+    let autoTimer = null;
+
+    const portSelect = document.getElementById("portSelect");
+    const condSelect = document.getElementById("condSelect");
+    const pistonGroup = document.getElementById("pistonGroup");
+    const needle = document.getElementById("gaugeNeedle");
+    const gaugeDigital = document.getElementById("gaugeDigital");
+    const valBar = document.getElementById("valBar");
+    const valPsi = document.getElementById("valPsi");
+    const valStrokes = document.getElementById("valStrokes");
+    const portLabel = document.getElementById("portLabel");
+    const statusPill = document.getElementById("statusPill");
+    const diagText = document.getElementById("diagText");
+    const airShade = document.getElementById("airShade");
+
+    function updateUI() {
+      const psi = Math.round(trappedBar * 14.5038);
+      valBar.textContent = trappedBar.toFixed(1) + " bar";
+      valPsi.textContent = psi + " PSI";
+      gaugeDigital.textContent = trappedBar.toFixed(1) + " bar";
+      valStrokes.textContent = strokes;
+
+      const clamped = Math.min(40, Math.max(0, trappedBar));
+      const angle = -135 + (clamped / 40) * 270;
+      needle.setAttribute("transform", `rotate(${angle})`);
+      airShade.setAttribute("opacity", (0.08 + (clamped / 40) * 0.35).toFixed(2));
+    }
+
+    function animateStroke(callback) {
+      // Move piston up (TDC) then slightly down
+      pistonGroup.style.transition = "transform 0.25s ease-out";
+      pistonGroup.setAttribute("transform", "translate(0, -68)");
+
+      setTimeout(() => {
+        const cond = condTargets[condSelect.value];
+        // Asymptotic buildup across strokes (typically reaches near max by 4-6 strokes)
+        const stepFactor = 1 - Math.pow(0.58, strokes + 1);
+        trappedBar = cond.maxBar * stepFactor;
+        strokes += 1;
+        updateUI();
+
+        pistonGroup.style.transition = "transform 0.25s ease-in";
+        pistonGroup.setAttribute("transform", "translate(0, 0)");
+
+        statusPill.textContent = cond.label;
+        statusPill.style.background = cond.color;
+        diagText.innerHTML = `<strong>પોર્ટ:</strong> ${portSelect.options[portSelect.selectedIndex].text}<br>${cond.note}`;
+
+        setTimeout(() => {
+          if (callback) callback();
+        }, 260);
+      }, 260);
+    }
+
+    function stopAuto() {
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+        document.getElementById("btnAuto").textContent = "ઓટો ક્રેંકિંગ (Auto Crank)";
+      }
+    }
+
+    document.getElementById("btnStroke").addEventListener("click", () => {
+      stopAuto();
+      if (strokes < 8) animateStroke();
+    });
+
+    document.getElementById("btnAuto").addEventListener("click", (e) => {
+      if (autoTimer) {
+        stopAuto();
+        return;
+      }
+      e.target.textContent = "ક્રેંકિંગ રોકો (Stop Crank)";
+      animateStroke();
+      autoTimer = setInterval(() => {
+        if (strokes >= 7) {
+          stopAuto();
+        } else {
+          animateStroke();
+        }
+      }, 620);
+    });
+
+    document.getElementById("btnRelease").addEventListener("click", () => {
+      stopAuto();
+      trappedBar = 0;
+      updateUI();
+      statusPill.textContent = "પ્રેશર રિલીઝ થયું (Released)";
+      statusPill.style.background = "#566573";
+      diagText.innerHTML = "ગેજનું રિલીઝ વાલ્વ દબાવતાં ટ્રેપ્ડ હવા બહાર નીકળી અને સોય <strong>0.0 bar</strong> પર આવી ગઈ.";
+    });
+
+    document.getElementById("btnReset").addEventListener("click", () => {
+      stopAuto();
+      strokes = 0;
+      trappedBar = 0;
+      pistonGroup.setAttribute("transform", "translate(0, 0)");
+      updateUI();
+      statusPill.textContent = "તૈયાર (Ready)";
+      statusPill.style.background = "#566573";
+      diagText.innerHTML = "સિમ્યુલેટર રીસેટ થયું છે. નવો ટેસ્ટ શરૂ કરવા સ્ટ્રોક અથવા ઓટો ક્રેંકિંગ દબાવો.";
+    });
+
+    portSelect.addEventListener("change", () => {
+      portLabel.textContent = portSelect.value === "injector" ? "INJECTOR PORT" : "GLOW PLUG PORT";
+    });
+
+    condSelect.addEventListener("change", () => {
+      stopAuto();
+      strokes = 0;
+      trappedBar = 0;
+      updateUI();
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>
 
